@@ -1,27 +1,35 @@
 {
   "name": "sf-chain",
-  "private": true,
+  "description": "A safe chain utility library for handling asynchronous operations in a type-safe manner.",
+  "author": "cging",
+  "license": "MIT",
   "version": "1.0.0",
   "type": "module",
   "sideEffects": false,
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
-  "browser": "dist/index.umd.js",
-  "exports": {
-    ".": {
-      "import": "./dist/index.esm.js",
-      "require": "./dist/index.cjs.js",
-      "browser": "./dist/index.umd.js"
-    }
-  },
+  "types": "dist/index.d.ts",
   "files": [
     "dist"
+  ],
+  "keywords": [
+    "typescript",
+    "safe-chain",
+    "async",
+    "utility",
+    "sf-chain",
+    "functional-programming",
+    "fp",
+    "monad",
+    "error-handling",
+    "composable",
+    "result"
   ],
   "scripts": {
     "prepare": "husky install",
     "test": "vitest",
     "lint-staged": "lint-staged",
-    "build": "tsc -b && vite build",
+    "build": "tsup src/index.ts --format cjs,esm --dts --minify",
     "format": "prettier --write ./**/*.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint ."
@@ -34,10 +42,9 @@
     "husky": "^8.0.3",
     "lint-staged": "^14.0.1",
     "prettier": "^3.2.5",
+    "tsup": "^8.3.6",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.22.0",
-    "vite": "^6.1.0",
-    "vite-plugin-dts": "^4.5.0",
     "vitest": "^3.0.6"
   },
   "lint-staged": {
@@ -45,5 +52,12 @@
       "eslint --fix",
       "prettier --write"
     ]
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cgoinglove/sf-chain.git"
   }
 }

@@ -1,1 +1,1 @@
-export { type SafeChain, safeChain } from "./core";
+export { type SafeChain, safe } from "./core";

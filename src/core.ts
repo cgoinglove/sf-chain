@@ -139,10 +139,10 @@ class Model<T = undefined> implements SafeChain<T> {
   }
 }
 
-export function safeChain<T>(init: () => T): SafeChain<T>;
-export function safeChain<T>(init: T): SafeChain<T>;
-export function safeChain(): SafeChain<unknown>;
-export function safeChain<T>(init?: T | (() => T)): SafeChain<T> {
+export function safe<T>(init: () => T): SafeChain<T>;
+export function safe<T>(init: T): SafeChain<T>;
+export function safe(): SafeChain<unknown>;
+export function safe<T>(init?: T | (() => T)): SafeChain<T> {
   const chain = new Model();
   try {
     const value = isFunction(init) ? init() : init;
