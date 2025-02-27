@@ -1,21 +1,10 @@
+import { Result, SafeResult } from "./result";
 import { isPromiseLike } from "./shared";
 
 /**
  * Represents any value that can be treated as an error.
  */
 export type ErrorLike = Error | string | unknown;
-
-type Result<T = any> =
-  | {
-      isError: true;
-      error: Error;
-      value?: undefined;
-    }
-  | {
-      isError: false;
-      error?: undefined;
-      value: T;
-    };
 
 type P = PromiseLike<any>;
 
@@ -137,60 +126,41 @@ export interface SafeChain<T> {
   ifError(consumer: (error: Error) => any): SafeChain<T>;
 }
 
-class ResultChain<T = undefined> implements SafeChain<T> {
-  private result: Result<Awaited<T>>;
-  private promise?: PromiseLike<void>;
+class SafeChainImpl<T = undefined> implements SafeChain<T> {
+  private result: SafeResult<Awaited<T>>;
+  private promise?: PromiseLike<any>;
 
   constructor() {
-    this.result = {
-      isError: false,
-      value: undefined as Awaited<T>,
-    };
-  }
-
-  private ok(value: Awaited<T>) {
-    this.result = {
-      isError: false,
-      value,
-    };
-  }
-
-  private error(err: ErrorLike) {
-    this.result = {
-      isError: true,
-      error: this.normalizeError(err),
-    };
-  }
-
-  private normalizeError(error: ErrorLike): Error {
-    if (error instanceof Error) return error;
-    return new Error(String(error));
+    this.result = SafeResult.ofOk(undefined) as SafeResult<Awaited<T>>;
   }
 
   private next<U>(
     cb: (r: Result<Awaited<T>>) => U,
   ): T extends P ? SafeChain<PromiseLike<Awaited<U>>> : SafeChain<U> {
-    const instance = new ResultChain<unknown>();
+    const instance = new SafeChainImpl<unknown>();
 
     if (this.promise) {
       // Handle async case
       instance.promise = this.promise
-        .then(() => cb(this.result))
-        .then(instance.ok.bind(instance), instance.error.bind(instance));
+        .then(() => cb(this.result.get()))
+        .then(
+          (v) => instance.result.ok(v),
+          (e) => instance.result.fail(e),
+        );
     } else {
       // Handle sync case
       try {
-        const next = cb(this.result);
+        const next = cb(this.result.get());
         if (isPromiseLike(next)) {
           instance.promise = next.then(
-            instance.ok.bind(instance),
-            instance.error.bind(instance),
+            (v) => instance.result.ok(v),
+            (e) => instance.result.fail(e),
           );
         } else {
-          instance.ok(next);
+          instance.result.ok(next);
         }
       } catch (err) {
-        instance.error(err);
+        instance.result.fail(err);
       }
     }
 
@@ -282,48 +252,55 @@ class ResultChain<T = undefined> implements SafeChain<T> {
     if (this.promise) {
       return (async () => {
         await this.promise;
-        return !this.result.isError;
+        return !this.result.get().isError;
       })() as T extends P ? Promise<boolean> : boolean;
     }
 
-    return !this.result.isError as T extends P ? Promise<boolean> : boolean;
+    return !this.result.get().isError as T extends P
+      ? Promise<boolean>
+      : boolean;
   }
 
   isError(): T extends P ? Promise<boolean> : boolean {
     if (this.promise) {
       return (async () => {
         await this.promise;
-        return this.result.isError;
+        return this.result.get().isError;
       })() as T extends P ? Promise<boolean> : boolean;
     }
 
-    return this.result.isError as T extends P ? Promise<boolean> : boolean;
+    return this.result.get().isError as T extends P
+      ? Promise<boolean>
+      : boolean;
   }
 
   unwrap(): T extends P ? PromiseLike<Awaited<T>> : T {
     if (this.promise) {
       return (async () => {
         await this.promise;
-        if (this.result.isError) throw this.result.error;
-        return this.result.value as T extends P ? PromiseLike<Awaited<T>> : T;
+        if (this.result.get().isError) throw this.result.get().error;
+        return this.result.get().value as T extends P
+          ? PromiseLike<Awaited<T>>
+          : T;
       })() as T extends P ? PromiseLike<Awaited<T>> : T;
     }
 
-    if (this.result.isError) throw this.result.error;
-    return this.result.value as T extends P ? PromiseLike<Awaited<T>> : T;
+    if (this.result.get().isError) throw this.result.get().error;
+    return this.result.get().value as T extends P ? PromiseLike<Awaited<T>> : T;
   }
 
   toPromise(): Promise<Awaited<T>> {
     if (this.promise) {
       return this.promise.then(() => {
-        if (this.result.isError) return Promise.reject(this.result.error);
-        return Promise.resolve(this.result.value);
+        if (this.result.get().isError)
+          return Promise.reject(this.result.get().error);
+        return Promise.resolve(this.result.get().value);
       }) as Promise<Awaited<T>>;
     }
 
-    return this.result.isError
-      ? Promise.reject(this.result.error)
-      : Promise.resolve(this.result.value);
+    return this.result.get().isError
+      ? Promise.reject(this.result.get().error)
+      : Promise.resolve(this.result.get().value!);
   }
 }
 
@@ -334,7 +311,7 @@ class ResultChain<T = undefined> implements SafeChain<T> {
  * @returns A SafeChain containing the value
  */
 export function safeValue<T>(value: T): SafeChain<T> {
-  const chain = new ResultChain<T>();
+  const chain = new SafeChainImpl<T>();
   try {
     return chain.map(() => value) as SafeChain<T>;
   } catch (e) {
@@ -345,7 +322,7 @@ export function safeValue<T>(value: T): SafeChain<T> {
 }
 
 export function safeExec<T>(fn: () => T): SafeChain<T> {
-  const chain = new ResultChain<T>();
+  const chain = new SafeChainImpl<T>();
   try {
     return chain.map(() => fn()) as SafeChain<T>;
   } catch (e) {
