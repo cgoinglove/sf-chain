@@ -1,6 +1,4 @@
-import { safe, SafeChain } from "../src/core";
-
-type P = PromiseLike<any>;
+import { safeValue, SafeChain } from "../src/core";
 
 type NonDistributive<T> = [T] extends [any] ? T : never;
 
@@ -16,165 +14,65 @@ type HasPromise<T> =
 type SafeChainCheckPromise<T, U> =
   HasPromise<U> extends true ? SafeChain<Promise<Awaited<T>>> : SafeChain<T>;
 
-/**
- * Type for a function that transforms a SafeChain
- */
-export type SafeTransformer<T = any, U = any> = (
-  chain: SafeChain<T>,
-) => T extends P ? SafeChain<Promise<Awaited<U>>> : SafeChain<U>;
+type SafeMap<A, B> = (input: Awaited<A>) => B;
 
-/**
- * Creates a map transformer function.
- *
- * @param transform The transformation function
- * @returns A function that applies the map transformation to a SafeChain
- */
-export function map<T, U>(
-  transform: (value: Awaited<T>) => U,
-): SafeTransformer<T, U> {
-  return ((chain: SafeChain<T>) => chain.map(transform)) as SafeTransformer<
-    T,
-    U
-  >;
-}
+export function safePipe<Input, A>(
+  ab: SafeMap<Input, A>,
+): (input: Input) => SafeChainCheckPromise<A, Input>;
 
-/**
- * Creates a flatMap transformer function.
- *
- * @param transform The transformation function
- * @returns A function that applies the flatMap transformation to a SafeChain
- */
-export function flatMap<T, U>(
-  transform: (value: Awaited<T>) => SafeChain<U>,
-): SafeTransformer<T, U> {
-  return ((chain: SafeChain<T>) => chain.flatMap(transform)) as SafeTransformer<
-    T,
-    U
-  >;
-}
+export function safePipe<Input, A, B>(
+  a: SafeMap<Input, A>,
+  b: SafeMap<A, B>,
+): (input: Input) => SafeChainCheckPromise<B, A | Input>;
 
-/**
- * Creates a tap transformer function.
- *
- * @param consumer The consumer function
- * @returns A function that applies the tap operation to a SafeChain
- */
-export function tap<T, U>(
-  consumer: (value: Awaited<T>) => U,
-): SafeTransformer<T, T> {
-  return ((chain: SafeChain<T>) => chain.tap(consumer)) as SafeTransformer<
-    T,
-    T
-  >;
-}
+export function safePipe<Input, A, B, C>(
+  a: SafeMap<Input, A>,
+  b: SafeMap<A, B>,
+  c: SafeMap<B, C>,
+): (input: Input) => SafeChainCheckPromise<C, A | B | Input>;
 
-/**
- * Creates an effect transformer function.
- *
- * @param effectFn The effect function
- * @returns A function that applies the effect operation to a SafeChain
- */
-export function effect<T, U>(
-  effectFn: (value: Awaited<T>) => U,
-): SafeTransformer<U, T> {
-  return ((chain: SafeChain<any>) => chain.effect(effectFn)) as SafeTransformer<
-    U,
-    T
-  >;
-}
+export function safePipe<Input, A, B, C, D>(
+  a: SafeMap<Input, A>,
+  b: SafeMap<A, B>,
+  c: SafeMap<B, C>,
+  d: SafeMap<C, D>,
+): (input: Input) => SafeChainCheckPromise<D, A | B | C | Input>;
 
-/**
- * Creates a tapError transformer function.
- *
- * @param consumer The error consumer function
- * @returns A function that applies the tapError operation to a SafeChain
- */
-export function tapError<T, U>(
-  consumer: (error: Error) => U,
-): SafeTransformer<T, T> {
-  return ((chain: SafeChain<T>) => chain.tapError(consumer)) as SafeTransformer<
-    T,
-    T
-  >;
-}
+export function safePipe<Input, A, B, C, D, E>(
+  a: SafeMap<Input, A>,
+  b: SafeMap<A, B>,
+  c: SafeMap<B, C>,
+  d: SafeMap<C, D>,
+  e: SafeMap<D, E>,
+): (input: Input) => SafeChainCheckPromise<E, A | B | C | D | Input>;
 
-/**
- * Creates a recover transformer function.
- *
- * @param handler The recovery handler function
- * @returns A function that applies the recovery operation to a SafeChain
- */
-export function recover<T, U>(
-  handler: (error: Error) => U,
-): SafeTransformer<T, U> {
-  return ((chain: SafeChain<T>) => chain.recover(handler)) as SafeTransformer<
-    T,
-    U
-  >;
-}
+export function safePipe<Input, A, B, C, D, E, F>(
+  a: SafeMap<Input, A>,
+  b: SafeMap<A, B>,
+  c: SafeMap<B, C>,
+  d: SafeMap<C, D>,
+  e: SafeMap<D, E>,
+  f: SafeMap<E, F>,
+): (input: Input) => SafeChainCheckPromise<F, A | B | C | D | E | Input>;
 
-export function safePipe<A, B>(
-  ab: SafeTransformer<A, B>,
-): (input: A) => SafeChainCheckPromise<B, A>;
+export function safePipe<Input, A, B, C, D, E, F, G>(
+  a: SafeMap<Input, A>,
+  b: SafeMap<A, B>,
+  c: SafeMap<B, C>,
+  d: SafeMap<C, D>,
+  e: SafeMap<D, E>,
+  f: SafeMap<E, F>,
+  g: SafeMap<F, G>,
+): (input: Input) => SafeChainCheckPromise<G, A | B | C | D | E | F | Input>;
 
-export function safePipe<A, B, C>(
-  ab: SafeTransformer<A, B>,
-  bc: SafeTransformer<B, C>,
-): (input: A) => SafeChainCheckPromise<C, A | B>;
-export function safePipe<A, B, C, D>(
-  ab: SafeTransformer<A, B>,
-  bc: SafeTransformer<B, C>,
-  cd: SafeTransformer<C, D>,
-): (input: A) => SafeChainCheckPromise<D, A | B | C>;
-export function safePipe<A, B, C, D, E>(
-  ab: SafeTransformer<A, B>,
-  bc: SafeTransformer<B, C>,
-  cd: SafeTransformer<C, D>,
-  de: SafeTransformer<D, E>,
-): (input: A) => SafeChainCheckPromise<E, A | B | C | D>;
-
-export function safePipe<A, B, C, D, E, F>(
-  ab: SafeTransformer<A, B>,
-  bc: SafeTransformer<B, C>,
-  cd: SafeTransformer<C, D>,
-  de: SafeTransformer<D, E>,
-  ef: SafeTransformer<E, F>,
-): (input: A) => SafeChainCheckPromise<F, A | B | C | D | E>;
-
-export function safePipe<A, B, C, D, E, F, G>(
-  ab: SafeTransformer<A, B>,
-  bc: SafeTransformer<B, C>,
-  cd: SafeTransformer<C, D>,
-  de: SafeTransformer<D, E>,
-  ef: SafeTransformer<E, F>,
-  fg: SafeTransformer<F, G>,
-): (input: A) => SafeChainCheckPromise<G, A | B | C | D | E | F>;
-export function safePipe<A, B, C, D, E, F, G, H>(
-  ab: SafeTransformer<A, B>,
-  bc: SafeTransformer<B, C>,
-  cd: SafeTransformer<C, D>,
-  de: SafeTransformer<D, E>,
-  ef: SafeTransformer<E, F>,
-  fg: SafeTransformer<F, G>,
-  gh: SafeTransformer<G, H>,
-): (input: A) => SafeChainCheckPromise<H, A | B | C | D | E | F | G>;
-export function safePipe<A, B, C, D, E, F, G, H, I>(
-  ab: SafeTransformer<A, B>,
-  bc: SafeTransformer<B, C>,
-  cd: SafeTransformer<C, D>,
-  de: SafeTransformer<D, E>,
-  ef: SafeTransformer<E, F>,
-  fg: SafeTransformer<F, G>,
-  gh: SafeTransformer<G, H>,
-  hi: SafeTransformer<H, I>,
-): (input: A) => SafeChainCheckPromise<I, A | B | C | D | E | F | G | H>;
 export function safePipe(
-  ...transformers: Array<(chain: SafeChain<any>) => SafeChain<any>>
+  ...transformers: Array<(input: any) => SafeChain<any>>
 ): (input: any) => SafeChain<any> {
   return (input: any) => {
-    const initialChain = transformers[0](safe(input));
-    return transformers
-      .slice(1)
-      .reduce((chain, transformer) => transformer(chain), initialChain);
+    const initialChain = safeValue(input);
+    return transformers.reduce(
+      (chain, transformer) => chain.map(transformer),
+      initialChain,
+    );
   };
 }
