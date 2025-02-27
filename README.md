@@ -13,14 +13,10 @@ SafeChain is a functional utility library for JavaScript/TypeScript that simplif
 
 ```bash
 npm install sf-chain
-or
-yarn add sf-chain
-or
-pnpm add sf-chain
 ```
 
 ```bash
-
+pnpm add sf-chain
 ```
 
 ## Basic Usage
@@ -31,20 +27,19 @@ pnpm add sf-chain
 import { safe, safeValue } from 'safe-chain';
 
 // Start with a value
-const chain1 = safe(42);
-
+const chain1 = safeValue(42);
 // ✅ safe(42) == safeValue(42)
-// ✅ safe(()=>42)
-// ❌ safeValue(()=>42)
+const chain2 = safe(42);
 
-// Start with a function (SafeChain will catch any errors thrown by the function)
-const chain2 = safe(() => {
-  if (Math.random() < 0.5) throw new Error('Random error');
+// Start with a function
+// ✅ safe(()=>100)
+// ❌ safeValue(()=>100)
+const chain3 = safe(() => {
   return 100;
 });
 
 // Start without parameters (creates a chain with an undefined value)
-const chain3 = safe();
+const chain4 = safe();
 ```
 
 ### map: Transforming Values

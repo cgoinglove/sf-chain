@@ -1,6 +1,28 @@
 {
   "name": "sf-chain",
-  "description": "A safe chain utility library for handling asynchronous operations in a type-safe manner.",
+  "description": "A functional, type-safe utility library for elegant error handling and asynchronous operations in JavaScript/TypeScript.",
+  "keywords": [
+    "typescript",
+    "javascript",
+    "safe-chain",
+    "sf-chain",
+    "async",
+    "promise",
+    "error-handling",
+    "functional-programming",
+    "fp",
+    "monad",
+    "railway-programming",
+    "error-monad",
+    "result-type",
+    "composable",
+    "chain",
+    "pipeline",
+    "utility",
+    "either",
+    "option",
+    "type-safe"
+  ],
   "author": "cging",
   "license": "MIT",
   "version": "1.0.1",
@@ -11,19 +33,6 @@
   "types": "dist/index.d.ts",
   "files": [
     "dist"
-  ],
-  "keywords": [
-    "typescript",
-    "safe-chain",
-    "async",
-    "utility",
-    "sf-chain",
-    "functional-programming",
-    "fp",
-    "monad",
-    "error-handling",
-    "composable",
-    "result"
   ],
   "scripts": {
     "prepare": "husky install",
