@@ -1,4 +1,4 @@
-# SafeChain
+# 🔗 SafeChain 🔗
 
 SafeChain is a functional utility library for JavaScript/TypeScript that simplifies error handling and asynchronous operations. It supports both synchronous and asynchronous operations while ensuring strong type safety.
 
@@ -19,27 +19,45 @@ npm install sf-chain
 pnpm add sf-chain
 ```
 
+```bash
+yarn add sf-chain
+```
+
 ## Basic Usage
+
+```typescript
+import { safe } from 'sf-chain'
+
+const result = safe(10)
+          .map(...) // Transform the value T -> U
+          .effect(...) // Side effect with error propagation
+          .tab(...) // Side effect without error propagation
+
+result.isOk(); // Check if chain contains a success value
+result.isError(); // Check if chain contains an error
+result.unwrap(); // Extract the final value (throws if there was an error)
+
+```
 
 ### Starting a Chain
 
 ```typescript
-import { safe, safeValue } from 'safe-chain';
+import { safe, safeValue } from 'sf-chain'
 
 // Start with a value
-const chain1 = safeValue(42);
-// ✅ safe(42) == safeValue(42)
-const chain2 = safe(42);
+const chain1 = safeValue(42)
+// safe(42) == safeValue(42)
+const chain2 = safe(42)
 
 // Start with a function
 // ✅ safe(()=>100)
 // ❌ safeValue(()=>100)
 const chain3 = safe(() => {
-  return 100;
-});
+  return 100
+})
 
 // Start without parameters (creates a chain with an undefined value)
-const chain4 = safe();
+const chain4 = safe()
 ```
 
 ### map: Transforming Values
@@ -49,19 +67,22 @@ const chain4 = safe();
 const result = safe(5)
   .map(x => x * 2) // 5 -> 10
   .map(x => x + 3) // 10 -> 13
-  .map(x => `The value is ${x}`); // 13 -> "The value is 13"
+  .map(x => `The value is ${x}`) // 13 -> "The value is 13"
 
-console.log(result.unwrap()); // "The value is 13"
+console.log(result.isOk()) // true
+console.log(result.unwrap()) // "The value is 13"
 
 // If there's an error, map is not executed
-const errorChain = safe(() => {
-  throw new Error('Error occurred');
-}).map(x => x * 2); // This transformation is not executed
+const errorChain = safe(1)
+  .map(x => new Error('Error occurred'))
+  .map(x => x * 2) // This transformation is not executed
+
+console.log(result.isError()) // true
 
 try {
-  errorChain.unwrap(); // Throws the error
+  errorChain.unwrap() // Throws the error
 } catch (e) {
-  console.error(e.message); // "Error occurred"
+  console.error(e.message) // "Error occurred"
 }
 ```
 
@@ -69,22 +90,30 @@ try {
 
 ```typescript
 // Synchronous effect example
+
 const syncResult = safe(42)
   .effect(value => {
-    console.log(`Processing: ${value}`);
-    // Throwing an error propagates to the chain
-    if (value > 100) throw new Error('Value is too large');
+    console.log(`Processing: ${value}`)
+    // Effect only propagates errors or makes chain async with promises, but doesn't transform the value
+    return Boolean(value) // This return value doesn't affect the chain's value
   })
-  .unwrap(); // 42
+  .unwrap() // 42
 
 // Asynchronous effect example
 const asyncChain = safe('data').effect(async data => {
   // Returning a Promise makes the chain asynchronous
-  await saveToDatabase(data);
-});
+  await saveToDatabase(data)
+})
 
 // Now unwrap() returns a Promise
-const result = await asyncChain.unwrap(); // "data"
+const result = await asyncChain.unwrap() // "data"
+
+// Asynchronous effect example
+const asyncChain = safe('data').effect(async data => {
+  await saveToDatabase(data)
+  return true
+})
+asyncChain.unwrap() // Promise<string>
 ```
 
 ### tap: Observing Values
@@ -94,27 +123,29 @@ const result = await asyncChain.unwrap(); // "data"
 const result = safe(42)
   .tap(result => {
     if (result.isError) {
-      console.error(`Error occurred: ${result.error.message}`);
+      console.error(`Error occurred: ${result.error.message}`)
     } else {
-      console.log(`Current value: ${result.value}`);
+      console.log(`Current value: ${result.value}`)
       // Errors thrown here don't affect the chain
-      throw new Error('This error is ignored!');
+      throw new Error('This error is ignored!')
     }
   })
   .map(x => x * 2) // 42 -> 84
-  .unwrap(); // 84
+
+result.isOk() // true
+result.unwrap() // 84
 
 // Returning a Promise doesn't affect the chain's synchronicity
 const syncChain = safe(10)
   .tap(async result => {
     if (!result.isError) {
-      await someAsyncOperation();
-      console.log('Async operation completed');
+      await someAsyncOperation()
+      console.log('Async operation completed')
     }
   })
-  .map(x => x + 5); // Still operates synchronously
+  .map(x => x + 5) // Still operates synchronously
 
-console.log(syncChain.unwrap()); // 15 (synchronous return)
+console.log(syncChain.unwrap()) // 15 (synchronous return)
 ```
 
 ### recover: Recovering from Errors
@@ -122,28 +153,28 @@ console.log(syncChain.unwrap()); // 15 (synchronous return)
 ```typescript
 // Error recovery example
 const chain = safe(() => {
-  throw new Error('Initial error');
+  throw new Error('Initial error')
 })
   .map(x => x + 10) // Not executed due to the error
   .recover(error => {
-    console.log(`Error recovery: ${error.message}`);
-    return 42; // Provide a fallback value
+    console.log(`Error recovery: ${error.message}`)
+    return 42 // Provide a fallback value
   })
-  .map(x => x * 2); // Applied to the recovered value (42)
+  .map(x => x * 2) // Applied to the recovered value (42)
 
-console.log(chain.unwrap()); // 84
+console.log(chain.unwrap()) // 84
 
 // Asynchronous recovery example
 const asyncRecovery = safe(() => {
-  throw new Error('Async recovery needed');
+  throw new Error('Async recovery needed')
 }).recover(async error => {
   // Asynchronous recovery makes the chain asynchronous
-  const fallbackData = await fetchFallbackData();
-  return fallbackData;
-});
+  const fallbackData = await fetchFallbackData()
+  return fallbackData
+})
 
 // Now unwrap() returns a Promise
-const recoveredData = await asyncRecovery.unwrap();
+const recoveredData = await asyncRecovery.unwrap()
 ```
 
 ## Practical Examples
@@ -151,7 +182,7 @@ const recoveredData = await asyncRecovery.unwrap();
 ### Client-Side Example (React)
 
 ```typescript
-import { safe } from 'safe-chain';
+import { safe } from 'sf-chain';
 import { useState, useEffect } from 'react';
 
 function ProductList({ categoryId }) {
@@ -193,7 +224,7 @@ function ProductList({ categoryId }) {
 ### Server-Side Example
 
 ```typescript
-import { safe } from 'safe-chain';
+import { safe } from 'sf-chain'
 
 function saveUserData(userData) {
   return safe(userData)
@@ -202,23 +233,23 @@ function saveUserData(userData) {
     .effect(saveToDatabase)
     .tap(result => {
       if (result.isError) {
-        logError('Save failed', result.error);
+        logError('Save failed', result.error)
       } else {
-        logSuccess('Save succeeded', result.value.id);
+        logSuccess('Save succeeded', result.value.id)
       }
     })
     .recover(error => ({
       success: false,
       error: error.message,
     }))
-    .unwrap();
+    .unwrap()
 }
 
 // Usage
 app.post('/api/users', async (req, res) => {
-  const result = await saveUserData(req.body);
-  res.status(result.success ? 200 : 400).json(result);
-});
+  const result = await saveUserData(req.body)
+  res.status(result.success ? 200 : 400).json(result)
+})
 ```
 
 ### pipe: Creating Function Pipelines
@@ -226,7 +257,7 @@ app.post('/api/users', async (req, res) => {
 `safe.pipe` creates a pipeline that processes data sequentially through multiple functions. The result of each function is passed as input to the next function.
 
 ```typescript
-import { safe, safePipe } from 'safe-chain';
+import { safe, safePipe } from 'sf-chain'
 
 // safe.pipe === safePipe
 
@@ -235,21 +266,21 @@ const processNumber = safe.pipe(
   num => num * 2, // Double the number
   num => num + 10, // Add 10
   num => `Result: ${num}`, // Convert to string
-);
+)
 
 // Usage
-const result = processNumber(5);
-console.log(result.unwrap()); // "Result: 20"
+const result = processNumber(5)
+console.log(result.unwrap()) // "Result: 20"
 
 // Can include asynchronous functions
 const fetchAndProcess = safe.pipe(
   id => id.toString(),
   idStr => fetchData(idStr), // Function that returns a Promise
   data => data.value,
-);
+)
 
 // If any function is asynchronous, the result is asynchronous
-const asyncResult = await fetchAndProcess(42).unwrap();
+const asyncResult = await fetchAndProcess(42).unwrap()
 ```
 
 `pipe` is useful in functional programming for clearly expressing data flow. Each step is independent and composed of pure functions, which improves code readability and maintainability.
